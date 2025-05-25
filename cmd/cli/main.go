@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"vehiclemotion"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/motion"
+	"vehiclemotion"
 )
 
 func main() {

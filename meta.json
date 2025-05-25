@@ -2,13 +2,13 @@
   "$schema": "https://dl.viam.dev/module.schema.json",
   "module_id": "erh:vehicle-motion",
   "visibility": "public",
-  "url": "",
+  "url": "https://github.com/erh/vehicle-motion",
   "description": "Modular motion service: outdoor-motion-service",
   "models": [
     {
       "api": "rdk:service:motion",
       "model": "erh:vehicle-motion:outdoor-motion-service",
-      "short_description": "Provide a short (100 characters or less) description of this model here",
+      "short_description": "motion service for outdoor bases, mostly for use with nav service",
       "markdown_link": "README.md#model-erhvehicle-motionoutdoor-motion-service"
     }
   ],

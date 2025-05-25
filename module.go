@@ -2,7 +2,9 @@ package vehiclemotion
 
 import (
 	"context"
-	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
 
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/referenceframe"
@@ -12,7 +14,6 @@ import (
 
 var (
 	OutdoorMotionServiceModel = resource.NewModel("erh", "vehicle-motion", "outdoor-motion-service")
-	errUnimplemented     = errors.New("unimplemented")
 )
 
 func init() {
@@ -24,7 +25,6 @@ func init() {
 }
 
 type Config struct {
-
 }
 
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
@@ -76,27 +76,29 @@ func (s *vehicleMotionOutdoorMotionService) Move(ctx context.Context, req motion
 }
 
 func (s *vehicleMotionOutdoorMotionService) MoveOnMap(ctx context.Context, req motion.MoveOnMapReq) (motion.ExecutionID, error) {
-	return false, fmt.Errorf("MoveOnMap not supported by %v", OutdoorMotionServiceModel)
+	id := uuid.New()
+	return id, fmt.Errorf("MoveOnMap not supported by %v", OutdoorMotionServiceModel)
 }
 
 func (s *vehicleMotionOutdoorMotionService) MoveOnGlobe(ctx context.Context, req motion.MoveOnGlobeReq) (motion.ExecutionID, error) {
-	panic("not implemented")
+	id := uuid.New()
+	return id, fmt.Errorf("eliot finish MoveOnGlobeReq")
 }
 
 func (s *vehicleMotionOutdoorMotionService) GetPose(ctx context.Context, componentName resource.Name, destinationFrame string, supplementalTransforms []*referenceframe.LinkInFrame, extra map[string]interface{}) (*referenceframe.PoseInFrame, error) {
-	return false, fmt.Errorf("GetPose not supported by %v", OutdoorMotionServiceModel)
+	return nil, fmt.Errorf("GetPose not supported by %v", OutdoorMotionServiceModel)
 }
 
 func (s *vehicleMotionOutdoorMotionService) StopPlan(ctx context.Context, req motion.StopPlanReq) error {
-	panic("not implemented")
+	return fmt.Errorf("eliot finish StopPlan")
 }
 
 func (s *vehicleMotionOutdoorMotionService) ListPlanStatuses(ctx context.Context, req motion.ListPlanStatusesReq) ([]motion.PlanStatusWithID, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("eliot finish ListPlanStatuses")
 }
 
 func (s *vehicleMotionOutdoorMotionService) PlanHistory(ctx context.Context, req motion.PlanHistoryReq) ([]motion.PlanWithStatus, error) {
-	panic("not implemented")
+	return nil, fmt.Errorf("eliot finish PlanHistory")
 }
 
 func (s *vehicleMotionOutdoorMotionService) DoCommand(ctx context.Context, cmd map[string]interface{}) (map[string]interface{}, error) {
