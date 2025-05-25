@@ -38,4 +38,5 @@ module: test module.tar.gz
 all: test module.tar.gz
 
 setup:
-	go mod tidy
+	brew install nlopt-static || sudo apt install -y libnlopt-dev 
+
