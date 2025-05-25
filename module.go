@@ -3,9 +3,12 @@ package vehiclemotion
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
+	"go.viam.com/rdk/components/base"
+	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/referenceframe"
 	"go.viam.com/rdk/resource"
@@ -25,10 +28,18 @@ func init() {
 }
 
 type Config struct {
+	Base           string
+	MovementSensor string `json:"movement_sensor"`
 }
 
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
-	return nil, nil, nil
+	if cfg.Base == "" {
+		return nil, nil, fmt.Errorf("need a base")
+	}
+	if cfg.MovementSensor == "" {
+		return nil, nil, fmt.Errorf("need a movement_sensor")
+	}
+	return []string{cfg.Base, cfg.MovementSensor}, nil, nil
 }
 
 type vehicleMotionOutdoorMotionService struct {
@@ -38,6 +49,9 @@ type vehicleMotionOutdoorMotionService struct {
 
 	logger logging.Logger
 	cfg    *Config
+
+	base base.Base
+	ms   movementsensor.MovementSensor
 
 	cancelCtx  context.Context
 	cancelFunc func()
@@ -64,6 +78,37 @@ func NewOutdoorMotionService(ctx context.Context, deps resource.Dependencies, na
 		cancelCtx:  cancelCtx,
 		cancelFunc: cancelFunc,
 	}
+
+	var err error
+
+	s.base, err = base.FromDependencies(deps, conf.Base)
+	if err != nil {
+		return nil, err
+	}
+
+	s.ms, err = movementsensor.FromDependencies(deps, conf.MovementSensor)
+	if err != nil {
+		return nil, err
+	}
+
+	prop, err := s.ms.Properties(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if !prop.PositionSupported {
+		return nil, fmt.Errorf("movementsensor needs PositionSupported")
+	}
+	if !prop.CompassHeadingSupported {
+		return nil, fmt.Errorf("movementsensor needs CompassHeadingSupported")
+	}
+	if !prop.LinearVelocitySupported {
+		return nil, fmt.Errorf("movementsensor needs LinearVelocitySupported")
+	}
+	if !prop.AngularVelocitySupported {
+		return nil, fmt.Errorf("movementsensor needs AngularVelocitySupported")
+	}
+
 	return s, nil
 }
 
@@ -82,6 +127,17 @@ func (s *vehicleMotionOutdoorMotionService) MoveOnMap(ctx context.Context, req m
 
 func (s *vehicleMotionOutdoorMotionService) MoveOnGlobe(ctx context.Context, req motion.MoveOnGlobeReq) (motion.ExecutionID, error) {
 	id := uuid.New()
+
+	if req.ComponentName.ShortName() != s.cfg.Base {
+		return id, fmt.Errorf("req had name %v but configured %s", req.ComponentName.ShortName(), s.cfg.Base)
+	}
+
+	if req.MovementSensorName.ShortName() != s.cfg.MovementSensor {
+		return id, fmt.Errorf("req had name %v but configured %s", req.MovementSensorName.ShortName(), s.cfg.MovementSensor)
+	}
+
+	s.logger.Infof("hi %#v", req)
+	time.Sleep(5 * time.Second)
 	return id, fmt.Errorf("eliot finish MoveOnGlobeReq")
 }
 

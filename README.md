@@ -1,50 +1,17 @@
 # Module vehicle-motion 
 
-Provide a description of the purpose of the module and any relevant information.
+tools for vehicle motion
 
 ## Model erh:vehicle-motion:outdoor-motion-service
 
-Provide a description of the model and any relevant information.
-
-### Configuration
-The following attribute template can be used to configure this model:
-
-```json
-{
-"attribute_1": <float>,
-"attribute_2": <string>
-}
-```
-
-#### Attributes
-
-The following attributes are available for this model:
-
-| Name          | Type   | Inclusion | Description                |
-|---------------|--------|-----------|----------------------------|
-| `attribute_1` | float  | Required  | Description of attribute 1 |
-| `attribute_2` | string | Optional  | Description of attribute 2 |
+motion service for outdoor vehicles
 
 #### Example Configuration
 
 ```json
 {
-  "attribute_1": 1.0,
-  "attribute_2": "foo"
+  "base": "<base>",
+  "movement_sensor": "<gps>"
 }
 ```
 
-### DoCommand
-
-If your model implements DoCommand, provide an example payload of each command that is supported and the arguments that can be used. If your model does not implement DoCommand, remove this section.
-
-#### Example DoCommand
-
-```json
-{
-  "command_name": {
-    "arg1": "foo",
-    "arg2": 1
-  }
-}
-```
