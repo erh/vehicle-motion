@@ -32,6 +32,12 @@ func init() {
 type Config struct {
 	Base           string
 	MovementSensor string `json:"movement_sensor"`
+
+	DeviationMeters float64 `json:"deviation_meters"`
+	SpeedKMH        float64 `json:"speed_kmh"`
+	SpeedAngular    float64 `json:"speed_degrees_per_second"`
+
+	defaultConfig *motion.MotionConfiguration
 }
 
 func (cfg *Config) Validate(path string) ([]string, []string, error) {
@@ -44,6 +50,30 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	deps := []string{cfg.Base, cfg.MovementSensor}
 	fmt.Printf("temp deps: %v\n", deps)
 	return deps, nil, nil
+}
+
+func (cfg *Config) fixMotionCfg(c *motion.MotionConfiguration) *motion.MotionConfiguration {
+
+	if c == nil {
+		if cfg.defaultConfig == nil {
+			cfg.defaultConfig = &motion.MotionConfiguration{}
+		}
+		c = cfg.defaultConfig
+	}
+
+	if c.PlanDeviationMM == 0 {
+		c.PlanDeviationMM = max(1000, cfg.DeviationMeters*1000)
+	}
+
+	if c.LinearMPerSec == 0 {
+		c.LinearMPerSec = max(1000, cfg.SpeedKMH*277.778)
+	}
+
+	if c.AngularDegsPerSec == 0 {
+		c.AngularDegsPerSec = max(10, cfg.SpeedAngular)
+	}
+
+	return c
 }
 
 type vehicleMotionOutdoorMotionService struct {
@@ -144,7 +174,9 @@ func (s *vehicleMotionOutdoorMotionService) MoveOnGlobe(ctx context.Context, req
 		return id, fmt.Errorf("req had name %v but configured %s", req.MovementSensorName.ShortName(), s.cfg.MovementSensor)
 	}
 
-	s.logger.Infof("new location to go to: %v", req.Destination)
+	s.logger.Infof("new location to go to: %v cfg: %v", req.Destination, req.MotionCfg)
+
+	req.MotionCfg = s.cfg.fixMotionCfg(req.MotionCfg)
 
 	s.dataLock.Lock()
 	defer s.dataLock.Unlock()
@@ -175,6 +207,7 @@ func (s *vehicleMotionOutdoorMotionService) DoCommand(ctx context.Context, cmd m
 }
 
 func (s *vehicleMotionOutdoorMotionService) Close(context.Context) error {
+	s.logger.Infof("close called")
 	s.cancelFunc()
 	return nil
 }
@@ -195,7 +228,6 @@ func (s *vehicleMotionOutdoorMotionService) run(ctx context.Context) {
 }
 
 func (s *vehicleMotionOutdoorMotionService) doLoop(ctx context.Context) error {
-
 	pos, _, err := s.ms.Position(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("can't get position: %v", err)
@@ -224,9 +256,15 @@ func (s *vehicleMotionOutdoorMotionService) doLoop(ctx context.Context) error {
 
 	linear, angular := computeSetVelocity(pos, goal, heading, cfg, s.logger)
 
+	s.logger.Debugf("setting linear: %0.2f mm/sec %0.2f kmh angular: %0.2f degs / sec", linear.Y, linear.Y/277.778, angular.Z)
+
 	if linear.Y == 0 && angular.Z == 0 {
-		// success
-		// do something?
+		s.dataLock.Lock()
+		if s.lastRequest != nil {
+			s.lastRequest = nil
+		}
+		s.dataLock.Unlock()
+		return s.base.Stop(ctx, nil)
 	}
 
 	return s.base.SetVelocity(ctx, linear, angular, nil)

@@ -26,7 +26,7 @@ func computeSetVelocity(pos, goal *geo.Point, heading float64, cfg *motion.Motio
 
 	degreesOff := normalizeAngleDiff(heading - bearing)
 
-	logger.Debugf("distanceKm: %v bearing: %v degreesOff: %v", distanceKm, bearing, degreesOff)
+	logger.Debugf("distanceKm: %0.2f distanceMm: %0.2f bearing: %v degreesOff: %v", distanceKm, distanceMm, bearing, degreesOff)
 
 	if distanceMm <= cfg.PlanDeviationMM {
 		return r3.Vector{}, r3.Vector{}
@@ -36,7 +36,7 @@ func computeSetVelocity(pos, goal *geo.Point, heading float64, cfg *motion.Motio
 		return r3.Vector{Y: cfg.LinearMPerSec}, r3.Vector{}
 	}
 
-	const hardTurnThreshold float64 = 20.0
+	const hardTurnThreshold float64 = 40.0
 
 	if math.Abs(degreesOff) > hardTurnThreshold {
 		// go slow and turn
@@ -44,7 +44,7 @@ func computeSetVelocity(pos, goal *geo.Point, heading float64, cfg *motion.Motio
 		if degreesOff > 0 {
 			z *= -1
 		}
-		return r3.Vector{Y: cfg.LinearMPerSec / 5}, r3.Vector{Z: z}
+		return r3.Vector{Y: cfg.LinearMPerSec / 4}, r3.Vector{Z: z}
 	}
 
 	z := -1 * (degreesOff / hardTurnThreshold) * cfg.AngularDegsPerSec
