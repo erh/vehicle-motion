@@ -41,7 +41,9 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.MovementSensor == "" {
 		return nil, nil, fmt.Errorf("need a movement_sensor")
 	}
-	return []string{cfg.Base, cfg.MovementSensor}, nil, nil
+	deps := []string{cfg.Base, cfg.MovementSensor}
+	fmt.Printf("temp deps: %v\n", deps)
+	return deps, nil, nil
 }
 
 type vehicleMotionOutdoorMotionService struct {
@@ -87,7 +89,7 @@ func NewOutdoorMotionService(ctx context.Context, deps resource.Dependencies, na
 
 	s.base, err = base.FromDependencies(deps, conf.Base)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot load base (%s): %w", conf.Base, err)
 	}
 
 	s.ms, err = movementsensor.FromDependencies(deps, conf.MovementSensor)
