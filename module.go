@@ -61,15 +61,15 @@ func (cfg *Config) fixMotionCfg(c *motion.MotionConfiguration) *motion.MotionCon
 		c = cfg.defaultConfig
 	}
 
-	if c.PlanDeviationMM == 0 {
+	if c.PlanDeviationMM <= 0 {
 		c.PlanDeviationMM = max(1000, cfg.DeviationMeters*1000)
 	}
 
-	if c.LinearMPerSec == 0 {
+	if c.LinearMPerSec <= 0 {
 		c.LinearMPerSec = max(1000, cfg.SpeedKMH*277.778)
 	}
 
-	if c.AngularDegsPerSec == 0 {
+	if c.AngularDegsPerSec <= 0 {
 		c.AngularDegsPerSec = max(10, cfg.SpeedAngular)
 	}
 
@@ -89,9 +89,9 @@ type vehicleMotionOutdoorMotionService struct {
 
 	cancelFunc func()
 
-	dataLock    sync.Mutex
-	lastRequest *motion.MoveOnGlobeReq
-	execId      motion.ExecutionID
+	dataLock      sync.Mutex
+	lastRequest   *motion.MoveOnGlobeReq
+	currentStatus motion.PlanStatusWithID
 }
 
 func newVehicleMotionOutdoorMotionService(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (motion.Service, error) {
@@ -181,7 +181,11 @@ func (s *vehicleMotionOutdoorMotionService) MoveOnGlobe(ctx context.Context, req
 	s.dataLock.Lock()
 	defer s.dataLock.Unlock()
 	s.lastRequest = &req
-	s.execId = id
+	s.currentStatus.ExecutionID = id
+	s.currentStatus.PlanID = id
+	s.currentStatus.ComponentName = s.base.Name()
+	s.currentStatus.Status.Timestamp = time.Now()
+	s.currentStatus.Status.State = motion.PlanStateInProgress
 
 	return id, nil
 }
@@ -195,7 +199,13 @@ func (s *vehicleMotionOutdoorMotionService) StopPlan(ctx context.Context, req mo
 }
 
 func (s *vehicleMotionOutdoorMotionService) ListPlanStatuses(ctx context.Context, req motion.ListPlanStatusesReq) ([]motion.PlanStatusWithID, error) {
-	return nil, fmt.Errorf("eliot finish ListPlanStatuses")
+	s.dataLock.Lock()
+	defer s.dataLock.Unlock()
+
+	if req.OnlyActivePlans && s.currentStatus.Status.State != motion.PlanStateInProgress {
+		return []motion.PlanStatusWithID{}, nil
+	}
+	return []motion.PlanStatusWithID{s.currentStatus}, nil
 }
 
 func (s *vehicleMotionOutdoorMotionService) PlanHistory(ctx context.Context, req motion.PlanHistoryReq) ([]motion.PlanWithStatus, error) {
@@ -256,16 +266,25 @@ func (s *vehicleMotionOutdoorMotionService) doLoop(ctx context.Context) error {
 
 	linear, angular := computeSetVelocity(pos, goal, heading, cfg, s.logger)
 
-	s.logger.Debugf("setting linear: %0.2f mm/sec %0.2f kmh angular: %0.2f degs / sec", linear.Y, linear.Y/277.778, angular.Z)
+	str := fmt.Sprintf("setting linear: %0.2f mm/sec %0.2f kmh angular: %0.2f degs / sec", linear.Y, linear.Y/277.778, angular.Z)
+
+	s.logger.Debug(str)
 
 	if linear.Y == 0 && angular.Z == 0 {
 		s.dataLock.Lock()
 		if s.lastRequest != nil {
 			s.lastRequest = nil
 		}
+		s.currentStatus.Status.Timestamp = time.Now()
+		s.currentStatus.Status.State = motion.PlanStateSucceeded
 		s.dataLock.Unlock()
 		return s.base.Stop(ctx, nil)
 	}
+
+	s.dataLock.Lock()
+	s.currentStatus.Status.Reason = &str
+	s.currentStatus.Status.Timestamp = time.Now()
+	s.dataLock.Unlock()
 
 	return s.base.SetVelocity(ctx, linear, angular, nil)
 }

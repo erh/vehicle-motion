@@ -83,7 +83,7 @@ func realMain() error {
 	defer thing.Close(ctx)
 
 	if true {
-		_, err = thing.MoveOnGlobe(ctx, motion.MoveOnGlobeReq{
+		execId, err := thing.MoveOnGlobe(ctx, motion.MoveOnGlobeReq{
 			ComponentName:      base.Named(cfg.Base),
 			Destination:        pos,
 			MovementSensorName: movementsensor.Named(cfg.MovementSensor),
@@ -91,7 +91,21 @@ func realMain() error {
 		if err != nil {
 			return err
 		}
-		time.Sleep(time.Minute)
+
+		for {
+			status, err := thing.ListPlanStatuses(ctx, motion.ListPlanStatusesReq{OnlyActivePlans: true})
+			if err != nil {
+				return err
+			}
+			logger.Infof("status: %v", status)
+			if len(status) == 0 {
+				break
+			}
+			if status[0].ExecutionID != execId {
+				break
+			}
+			time.Sleep(time.Second)
+		}
 	}
 
 	return nil
