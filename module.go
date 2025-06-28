@@ -47,9 +47,7 @@ func (cfg *Config) Validate(path string) ([]string, []string, error) {
 	if cfg.MovementSensor == "" {
 		return nil, nil, fmt.Errorf("need a movement_sensor")
 	}
-	deps := []string{cfg.Base, cfg.MovementSensor}
-	fmt.Printf("temp deps: %v\n", deps)
-	return deps, nil, nil
+	return []string{cfg.Base, cfg.MovementSensor}, nil, nil
 }
 
 func (cfg *Config) fixMotionCfg(c *motion.MotionConfiguration) *motion.MotionConfiguration {
@@ -66,7 +64,7 @@ func (cfg *Config) fixMotionCfg(c *motion.MotionConfiguration) *motion.MotionCon
 	}
 
 	if c.LinearMPerSec <= 0 {
-		c.LinearMPerSec = max(1000, cfg.SpeedKMH*277.778)
+		c.LinearMPerSec = max(1, cfg.SpeedKMH*1000/3600)
 	}
 
 	if c.AngularDegsPerSec <= 0 {
@@ -164,20 +162,19 @@ func (s *vehicleMotionOutdoorMotionService) MoveOnMap(ctx context.Context, req m
 }
 
 func (s *vehicleMotionOutdoorMotionService) MoveOnGlobe(ctx context.Context, req motion.MoveOnGlobeReq) (motion.ExecutionID, error) {
-	id := uuid.New()
-
 	if req.ComponentName.ShortName() != s.cfg.Base {
-		return id, fmt.Errorf("req had name %v but configured %s", req.ComponentName.ShortName(), s.cfg.Base)
+		return uuid.Nil, fmt.Errorf("req had name %v but configured %s", req.ComponentName.ShortName(), s.cfg.Base)
 	}
 
 	if req.MovementSensorName.ShortName() != s.cfg.MovementSensor {
-		return id, fmt.Errorf("req had name %v but configured %s", req.MovementSensorName.ShortName(), s.cfg.MovementSensor)
+		return uuid.Nil, fmt.Errorf("req had name %v but configured %s", req.MovementSensorName.ShortName(), s.cfg.MovementSensor)
 	}
 
 	s.logger.Infof("new location to go to: %v cfg: %v", req.Destination, req.MotionCfg)
 
 	req.MotionCfg = s.cfg.fixMotionCfg(req.MotionCfg)
 
+	id := uuid.New()
 	s.dataLock.Lock()
 	defer s.dataLock.Unlock()
 	s.lastRequest = &req
@@ -195,7 +192,12 @@ func (s *vehicleMotionOutdoorMotionService) GetPose(ctx context.Context, compone
 }
 
 func (s *vehicleMotionOutdoorMotionService) StopPlan(ctx context.Context, req motion.StopPlanReq) error {
-	return fmt.Errorf("eliot finish StopPlan")
+	s.dataLock.Lock()
+	defer s.dataLock.Unlock()
+	s.lastRequest = nil
+	s.currentStatus.Status.Timestamp = time.Now()
+	s.currentStatus.Status.State = motion.PlanStateStopped
+	return s.base.Stop(ctx, nil)
 }
 
 func (s *vehicleMotionOutdoorMotionService) ListPlanStatuses(ctx context.Context, req motion.ListPlanStatusesReq) ([]motion.PlanStatusWithID, error) {

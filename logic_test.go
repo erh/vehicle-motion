@@ -26,30 +26,30 @@ func TestComputeSetVelocity1(t *testing.T) {
 
 	// heading in the right direction, just go fast
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), 0, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100 * 1000})
 	test.That(t, angular, test.ShouldResemble, r3.Vector{})
 
 	// need to turn hard, go slow
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), 90, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 20})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 25 * 1000})
 	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: -30})
 
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), -90, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 20})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 25 * 1000})
 	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: 30})
 
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), 270, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 20})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 25 * 1000})
 	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: 30})
 
 	// need to turn a little, go fast
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), 5, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100})
-	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: -7.5})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100 * 1000})
+	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: -3.75})
 
 	// need to turn medium, go a little slower
 	linear, angular = computeSetVelocity(geo.NewPoint(50, 50), geo.NewPoint(51, 50), 10, cfg, logger)
-	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100})
-	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: -15})
+	test.That(t, linear, test.ShouldResemble, r3.Vector{Y: 100 * 1000})
+	test.That(t, angular, test.ShouldResemble, r3.Vector{Z: -7.5})
 
 }

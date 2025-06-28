@@ -33,7 +33,7 @@ func computeSetVelocity(pos, goal *geo.Point, heading float64, cfg *motion.Motio
 	}
 
 	if math.Abs(degreesOff) <= 0.1 {
-		return r3.Vector{Y: cfg.LinearMPerSec}, r3.Vector{}
+		return r3.Vector{Y: cfg.LinearMPerSec * 1000}, r3.Vector{}
 	}
 
 	const hardTurnThreshold float64 = 40.0
@@ -44,10 +44,10 @@ func computeSetVelocity(pos, goal *geo.Point, heading float64, cfg *motion.Motio
 		if degreesOff > 0 {
 			z *= -1
 		}
-		return r3.Vector{Y: cfg.LinearMPerSec / 4}, r3.Vector{Z: z}
+		return r3.Vector{Y: cfg.LinearMPerSec * 1000 / 4}, r3.Vector{Z: z}
 	}
 
 	z := -1 * (degreesOff / hardTurnThreshold) * cfg.AngularDegsPerSec
 
-	return r3.Vector{Y: cfg.LinearMPerSec}, r3.Vector{Z: z}
+	return r3.Vector{Y: cfg.LinearMPerSec * 1000}, r3.Vector{Z: z}
 }
