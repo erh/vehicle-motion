@@ -69,20 +69,31 @@ func realMain() error {
 		svcLogger.SetLevel(logging.DEBUG)
 	}
 
+
+	
 	//pos := geo.NewPoint(40.977310, -73.659143)
 	//pos := geo.NewPoint(40.977618, -73.659162)
 
 	//pos := geo.NewPoint(40.975170, -73.660791)
 	//pos := geo.NewPoint(40.975264, -73.660687)
-	pos := geo.NewPoint(40.975156, -73.660606)
+	//pos := geo.NewPoint(40.975156, -73.660606)
+	
+	//pos := geo.NewPoint(40.975061, -73.660823) // start
 
+	
 	thing, err := vehiclemotion.NewOutdoorMotionService(ctx, deps, motion.Named("foo"), cfg, svcLogger)
 	if err != nil {
 		return err
 	}
 	defer thing.Close(ctx)
 
-	if true {
+	locations := []*geo.Point{
+		geo.NewPoint(40.975273, -73.660633), // north corner
+		geo.NewPoint(40.975217, -73.660574), // north east
+		geo.NewPoint(40.975074, -73.660854), // south
+	}
+
+	for _, pos := range locations {
 		execId, err := thing.MoveOnGlobe(ctx, motion.MoveOnGlobeReq{
 			ComponentName:      base.Named(cfg.Base),
 			Destination:        pos,
